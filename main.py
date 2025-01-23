@@ -15,9 +15,6 @@ api_secret = os.getenv('API_SECRET')
 # importante marcar testnet=True para que sepa que estamos en la cuenta de prueba
 client = Client(api_key, api_secret, testnet=True) 
 
-symbol = "BTCUSDT"
-trade_quantity = 0.001
-rsi_period = 12
 buy_rsi_threshold = 30
 sell_rsi_threshold = 70
 
@@ -39,35 +36,85 @@ def calculate_rsi(df, period):
     return df
 
 def place_buy_order(symbol, quantity):
-    order = client.order_market_buy(symbol=symbol, quantity = quantity)
-    print(f"Placing buy order for {quantity} {symbol}")
+    print(f"Creando orden de compra por {quantity} {symbol}...")
+    client.order_market_buy(symbol=symbol, quantity = quantity)
+    print("Orden de compra exitosa")
+
 
 def place_sell_order(symbol, quantity):
-    order = client.order_market_sell(symbol=symbol, quantity = quantity)
-    print(f"Placing sell order for {quantity} {symbol}")
+    print(f"Creando orden de venta por {quantity} {symbol}...")
+    client.order_market_sell(symbol=symbol, quantity = quantity)
+    print("Orden de venta exitosa")
 
-def trading_bot():
     
+def trading_bot():
+    # queremos que compre si el rsi actual es menor al umbral de compra y que venda si es mayor al umbral de venta
     # esto es para indicar que el bot no compro antes
     in_position = False
+    print("""
+        Indique con que criptomoneda operar:
+        1. BTC/USDT  (Bitcoin)
+        2. ETH/USDT  (Ethereum)
+        3. BNB/USDT  (Binance Coin)
+        4. XRP/USDT  (Ripple)
+        5. ADA/USDT  (Cardano)
+        6. DOGE/USDT (Dogecoin)
+        7. SOL/USDT  (Solana)
+        8. MATIC/USDT (Polygon)
+        9. DOT/USDT  (Polkadot)
+        10. LTC/USDT (Litecoin)
+        """)
+    choice = input()
     
-    # llamamos el precio de btc en un endless loop
+    match choice:
+        case "1":
+            symbol = "BTCUSDT"
+        case "2":
+            symbol = "ETHUSDT"
+        case "3":
+            symbol = "BNBUSDT"
+        case "4":
+            symbol = "XRPUSDT"
+        case "5":
+            symbol = "ADAUSDT"
+        case "6":
+            symbol = "DOGEUSDT"
+        case "7":
+            symbol = "SOLUSDT"
+        case "8":
+            symbol = "MATICUSDT"
+        case "9":
+            symbol = "DOTUSDT"
+        case "10":
+            symbol = "LTCUSDT"
+        case _:
+            print("Opción no valida")
+            exit()
+    # god bless clear screen
+    print("")
+    print(f"Ud. ha elegido {symbol}\n")
+    time.sleep(1)
+    print(chr(27) + "[2J")
+    print(f"Indique la cantidad de {symbol} con la que desea operar: ")
+    trade_quantity = input()
+    print(chr(27) + "[2J")
     while True:
-        current_price = get_current_price(symbol)
-        print(f"Current price of {symbol}: {current_price}")
-        if not in_position:
-            if current_price < buy_price_threshold:
-                print(f"Price is below {buy_price_threshold}. Placing buy order.")
-                place_buy_order(symbol, trade_quantity)
-                in_position = True
-        else: 
-            if current_price > sell_price_threshold:
-                print(f"Price is below {sell_price_threshold}. Placing sell order.")
-                place_sell_order(symbol, trade_quantity)
-                in_position = False
-                
-        time.sleep(3)
+        df = get_historical_data(symbol)
+        # pongo 14 porque es el rsi recomendado 
+        df = calculate_rsi(df, period=14)
+        current_rsi = df['rsi'].iloc[-1]
+
+        print(f"RSI: {current_rsi}")
+        if not in_position and current_rsi < buy_rsi_threshold:
+            print(f"RSI esta por debajo de {buy_rsi_threshold}.")
+            place_buy_order(symbol, trade_quantity)
+            in_position = True
+        elif in_position and current_rsi > sell_rsi_threshold:
+            print(f"RSI esta por encima de {sell_rsi_threshold}.")
+            place_sell_order(symbol, trade_quantity)
+            in_position = False
+            
+        time.sleep(5)
 
 if __name__ == "__main__":
-    get_historical_data(symbol)
-    
+    trading_bot()    
