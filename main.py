@@ -27,22 +27,24 @@ def get_historical_data(symbol, interval='1h', limit=100):
     # open high low close volume
     ohlcv = pd.DataFrame(klines, columns=["timestamp", "open", "high", "low", "close", "volume", "close_time", "quote_asset_volume", "number_of_trades", "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"])
     ohlcv["timestamp"] = pd.to_datetime(ohlcv["timestamp"], unit="ms")
-    # detallar que hace esto, no tegno idea BUSCAR
-    ohlcv.set_index 
-    
-    
+    # hacemos que el index sea timestamp
+    ohlcv.set_index("timestamp", inplace=True)
+    ohlcv["close"] = ohlcv["close"].astype(float)
+    return ohlcv
 
-def get_current_price(symbol):
-    ticker = client.get_symbol_ticker(symbol=symbol)
-    return float(ticker['price'])
+def calculate_rsi(df, period):
+    # calcula el rsi para un df de precios
+    rsi_indicator = RSIIndicator(df['close'], window=period)
+    df['rsi'] = rsi_indicator.rsi()
+    return df
 
 def place_buy_order(symbol, quantity):
     order = client.order_market_buy(symbol=symbol, quantity = quantity)
-    print(f"Buy order done: {order}")
+    print(f"Placing buy order for {quantity} {symbol}")
 
 def place_sell_order(symbol, quantity):
     order = client.order_market_sell(symbol=symbol, quantity = quantity)
-    print(f"Sell order done: {order}")
+    print(f"Placing sell order for {quantity} {symbol}")
 
 def trading_bot():
     
