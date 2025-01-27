@@ -12,7 +12,7 @@ load_dotenv()
 logging.basicConfig(
         level=logging.INFO, 
         format='%(asctime)s - %(levelname)s - %(message)s', 
-        datefmt='%m-%d %H:%M:%S'
+        datefmt='%m-%d %H:%M:%S',
         filename="trading_bot.log",
         filemode='a'
 )
@@ -21,7 +21,7 @@ logging.basicConfig(
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 # set a format which is simpler for console use
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+formatter = logging.Formatter('%(levelname)-8s %(message)s')
 # tell the handler to use this format
 console.setFormatter(formatter)
 # add the handler to the root logger
@@ -152,6 +152,9 @@ def trading_bot():
             time.sleep(5)
     except:
         logging.exception("Error de ejecucion")
+
+def get_client_data():
+    print(client.get_account())
 
 if __name__ == "__main__":
     trading_bot()
