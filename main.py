@@ -12,10 +12,20 @@ load_dotenv()
 logging.basicConfig(
         level=logging.INFO, 
         format='%(asctime)s - %(levelname)s - %(message)s', 
-        handlers=[
-            logging.FileHandler(trading_bot.log)
-            logging.StreamHandler()         # disp in terminal
-        ])
+        datefmt='%m-%d %H:%M:%S'
+        filename="trading_bot.log",
+        filemode='a'
+)
+# src: https://stackoverflow.com/questions/9321741/printing-to-screen-and-writing-to-a-file-at-the-same-time
+# define a Handler which writes INFO messages or higher to the sys.stderr
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+# tell the handler to use this format
+console.setFormatter(formatter)
+# add the handler to the root logger
+logging.getLogger().addHandler(console)
 
 # obtenemos la claves api del .env
 api_key = os.getenv('API_KEY')
@@ -39,7 +49,7 @@ def get_historical_data(symbol, interval='1h', limit=100):
         ohlcv["close"] = ohlcv["close"].astype(float)
         return ohlcv
     except Exception as e:
-        print(f"Error al obtener datos: {e}")
+        logging.exception("Error al obtener datos")
         return None
 
 def calculate_rsi(df, period):
@@ -49,7 +59,7 @@ def calculate_rsi(df, period):
     return df
 
 def place_buy_order(symbol, quantity):
-    print(f"Creando orden de compra por {quantity} {symbol}...")
+    logging.info("Creando orden de compra por %s %s...", quantity, symbol)
     try:
         client.order_market_buy(symbol=symbol, quantity = quantity)
         print("Orden de compra exitosa")
