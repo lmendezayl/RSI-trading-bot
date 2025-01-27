@@ -8,6 +8,14 @@ import logging # first timer
 
 # esto carga las variables de entorno
 load_dotenv()
+# log config
+logging.basicConfig(
+        level=logging.INFO, 
+        format='%(asctime)s - %(levelname)s - %(message)s', 
+        handlers=[
+            logging.FileHandler(trading_bot.log)
+            logging.StreamHandler()         # disp in terminal
+        ])
 
 # obtenemos la claves api del .env
 api_key = os.getenv('API_KEY')
@@ -61,8 +69,9 @@ def trading_bot():
     # queremos que compre si el rsi actual es menor al umbral de compra y que venda si es mayor al umbral de venta
     # esto es para indicar que el bot no compro antes
     in_position = False
+    
+
     # todas las opciones disp
-    clearscr = chr(27) + "[2J"
     print("""
         Indique con que criptomoneda operar:
         1. BTC/USDT  (Bitcoin)
@@ -106,10 +115,10 @@ def trading_bot():
     print("")
     logging.info(f"Ud. ha elegido {symbol}\n")
     time.sleep(1)
-    print(clearscr)
+    print(chr(27) + "[2J")
     logging.info(f"Indique la cantidad de {symbol} con la que desea operar: ")
     trade_quantity = input()
-    print(clearscr)
+    print(chr(27) + "[2J")
     try:
         while True:
             df = get_historical_data(symbol)
