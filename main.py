@@ -3,7 +3,8 @@ from ta.momentum import RSIIndicator
 from dotenv import load_dotenv
 import os
 import time
-import pandas as pd 
+import pandas as pd     
+import logging # first timer
 
 # esto carga las variables de entorno
 load_dotenv()
@@ -61,6 +62,7 @@ def trading_bot():
     # esto es para indicar que el bot no compro antes
     in_position = False
     # todas las opciones disp
+    clearscr = chr(27) + "[2J"
     print("""
         Indique con que criptomoneda operar:
         1. BTC/USDT  (Bitcoin)
@@ -102,37 +104,37 @@ def trading_bot():
             exit()
     # god bless clear screen
     print("")
-    print(f"Ud. ha elegido {symbol}\n")
+    logging.info(f"Ud. ha elegido {symbol}\n")
     time.sleep(1)
-    print(chr(27) + "[2J")
-    print(f"Indique la cantidad de {symbol} con la que desea operar: ")
+    print(clearscr)
+    logging.info(f"Indique la cantidad de {symbol} con la que desea operar: ")
     trade_quantity = input()
-    print(chr(27) + "[2J")
+    print(clearscr)
     try:
         while True:
             df = get_historical_data(symbol)
-            # error hand
             if df is None:
-                print("Error al obtener datos históricos. Reintentando en 5 segundos...")
+                logging.error("Error al obtener datos historicos. Reintentando en 5 segundos...")
                 time.sleep(5)
                 continue
+            
             # pongo 14 porque es el rsi recomendado 
             df = calculate_rsi(df, period=14)
             current_rsi = df['rsi'].iloc[-1]
 
-            print(f"RSI: {current_rsi}")
+            logging.info(f"RSI: {current_rsi}")
             if not in_position and current_rsi < buy_rsi_threshold:
-                print(f"RSI esta por debajo de {buy_rsi_threshold}.")
+                logging.info(f"RSI esta por debajo de {buy_rsi_threshold}.")
                 place_buy_order(symbol, trade_quantity)
                 in_position = True
             elif in_position and current_rsi > sell_rsi_threshold:
-                print(f"RSI esta por encima de {sell_rsi_threshold}.")
+                logging.info(f"RSI esta por encima de {sell_rsi_threshold}.")
                 place_sell_order(symbol, trade_quantity)
                 in_position = False
                 
             time.sleep(5)
     except Exception as e:
-        print(f"Error de ejecucion: {e}")
-    
+        logging.error(f"Error de ejecucion: {e}")
+
 if __name__ == "__main__":
-    trading_bot()    
+    trading_bot()
