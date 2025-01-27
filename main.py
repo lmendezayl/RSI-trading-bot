@@ -59,31 +59,30 @@ def calculate_rsi(df, period):
     return df
 
 def place_buy_order(symbol, quantity):
-    logging.info("Creando orden de compra por %s %s...", quantity, symbol)
+    logging.info("Creando orden de compra por %d %s...", quantity, symbol)
     try:
         client.order_market_buy(symbol=symbol, quantity = quantity)
-        print("Orden de compra exitosa")
+        logging.info("Orden de compra exitosa")
     except Exception as e:
-        print(f"Error al crear la orden de compra:{e}")
+        logging.exception("Error al crear la orden de compra")
 
 
 def place_sell_order(symbol, quantity):
-    print(f"Creando orden de venta por {quantity} {symbol}...")
+    logging.info("Creando orden de venta por %d %s...", quantity, symbol)
     try: 
         client.order_market_sell(symbol=symbol, quantity = quantity)
-        print("Orden de venta exitosa")
+        logging.info("Orden de venta exitosa")
     except Exception as e:
-        print(f"Error al crear orden de venta: {e}")
+        logging.exception("Error al crear la orden de venta")
     
 def trading_bot():
     # queremos que compre si el rsi actual es menor al umbral de compra y que venda si es mayor al umbral de venta
     # esto es para indicar que el bot no compro antes
     in_position = False
-    
-
+    print(chr(27) + "[2J")
     # todas las opciones disp
     print("""
-        Indique con que criptomoneda operar:
+        Indique con que criptomoneda operar
         1. BTC/USDT  (Bitcoin)
         2. ETH/USDT  (Ethereum)
         3. BNB/USDT  (Binance Coin)
@@ -96,7 +95,6 @@ def trading_bot():
         10. LTC/USDT (Litecoin)
         """)
     choice = input()
-    
     match choice:
         case "1":
             symbol = "BTCUSDT"
@@ -124,11 +122,12 @@ def trading_bot():
     # god bless clear screen
     print("")
     logging.info(f"Ud. ha elegido {symbol}\n")
-    time.sleep(1)
+    time.sleep(2)
     print(chr(27) + "[2J")
-    logging.info(f"Indique la cantidad de {symbol} con la que desea operar: ")
+    logging.info("Indique la cantidad de %s con la que desea operar", symbol)
     trade_quantity = input()
     print(chr(27) + "[2J")
+    logging.info("Ud. ha elegido operar con %d %s", trade_quantity, symbol)
     try:
         while True:
             df = get_historical_data(symbol)
@@ -136,24 +135,23 @@ def trading_bot():
                 logging.error("Error al obtener datos historicos. Reintentando en 5 segundos...")
                 time.sleep(5)
                 continue
-            
             # pongo 14 porque es el rsi recomendado 
             df = calculate_rsi(df, period=14)
             current_rsi = df['rsi'].iloc[-1]
 
-            logging.info(f"RSI: {current_rsi}")
+            logging.info("RSI: %d ", current_rsi)
             if not in_position and current_rsi < buy_rsi_threshold:
-                logging.info(f"RSI esta por debajo de {buy_rsi_threshold}.")
+                logging.info("RSI esta por debajo de %d.", buy_rsi_threshold)
                 place_buy_order(symbol, trade_quantity)
                 in_position = True
             elif in_position and current_rsi > sell_rsi_threshold:
-                logging.info(f"RSI esta por encima de {sell_rsi_threshold}.")
+                logging.info("RSI esta por encima de %d.", sell_rsi_threshold)
                 place_sell_order(symbol, trade_quantity)
                 in_position = False
                 
             time.sleep(5)
-    except Exception as e:
-        logging.error(f"Error de ejecucion: {e}")
+    except:
+        logging.exception("Error de ejecucion")
 
 if __name__ == "__main__":
     trading_bot()
