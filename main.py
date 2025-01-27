@@ -111,6 +111,11 @@ def trading_bot():
     try:
         while True:
             df = get_historical_data(symbol)
+            # error hand
+            if df is None:
+                print("Error al obtener datos históricos. Reintentando en 5 segundos...")
+                time.sleep(5)
+                continue
             # pongo 14 porque es el rsi recomendado 
             df = calculate_rsi(df, period=14)
             current_rsi = df['rsi'].iloc[-1]
