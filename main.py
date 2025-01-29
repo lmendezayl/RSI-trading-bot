@@ -21,7 +21,7 @@ logging.basicConfig(
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 # set a format which is simpler for console use
-formatter = logging.Formatter('%(levelname)-8s %(message)s')
+formatter = logging.Formatter('%(message)s')
 # tell the handler to use this format
 console.setFormatter(formatter)
 # add the handler to the root logger
@@ -48,10 +48,10 @@ def get_historical_data(symbol, interval='1h', limit=100):
         ohlcv.set_index("timestamp", inplace=True)
         ohlcv["close"] = ohlcv["close"].astype(float)
         return ohlcv
-    except Exception as e:
+    except:
         logging.exception("Error al obtener datos")
         return None
-
+    
 def calculate_rsi(df, period):
     # calcula el rsi para un df de precios
     rsi_indicator = RSIIndicator(df['close'], window=period)
@@ -59,102 +59,116 @@ def calculate_rsi(df, period):
     return df
 
 def place_buy_order(symbol, quantity):
-    logging.info("Creando orden de compra por %d %s...", quantity, symbol)
     try:
         client.order_market_buy(symbol=symbol, quantity = quantity)
         logging.info("Orden de compra exitosa")
-    except Exception as e:
+    except:
         logging.exception("Error al crear la orden de compra")
 
 
 def place_sell_order(symbol, quantity):
-    logging.info("Creando orden de venta por %d %s...", quantity, symbol)
+    logging.info("Creando orden de venta por", quantity, symbol, "...")
     try: 
         client.order_market_sell(symbol=symbol, quantity = quantity)
         logging.info("Orden de venta exitosa")
-    except Exception as e:
+    except:
         logging.exception("Error al crear la orden de venta")
     
+def print_wallet():
+    balances = client.get_account()['balances']
+    print("Cartera: ")
+    for i in range (10):
+        print(balances[i]['asset'], " ", balances[i]['free'] )
+    print("")
+
+def get_price(symbol):
+    print(symbol, ": $", float(client.get_symbol_ticker(symbol=symbol)['price']))      
+    print("")
+
 def trading_bot():
     # queremos que compre si el rsi actual es menor al umbral de compra y que venda si es mayor al umbral de venta
     # esto es para indicar que el bot no compro antes
     in_position = False
+    
     print(chr(27) + "[2J")
-    # todas las opciones disp
-    print("""
-        Indique con que criptomoneda operar
-        1. BTC/USDT  (Bitcoin)
-        2. ETH/USDT  (Ethereum)
-        3. BNB/USDT  (Binance Coin)
-        4. XRP/USDT  (Ripple)
-        5. ADA/USDT  (Cardano)
-        6. DOGE/USDT (Dogecoin)
-        7. SOL/USDT  (Solana)
-        8. MATIC/USDT (Polygon)
-        9. DOT/USDT  (Polkadot)
-        10. LTC/USDT (Litecoin)
-        """)
+    
+    print_wallet()
+    
+    logging.info("Indique con que criptomoneda operar")
+    balances = client.get_account()['balances']
+    for i in range(10):
+        print(i+1, ". ", balances[i]['asset'], "/ USDT")
+        
     choice = input()
+    
     match choice:
         case "1":
-            symbol = "BTCUSDT"
-        case "2":
             symbol = "ETHUSDT"
+        case "2":
+            symbol = "BTCUSDT"
         case "3":
-            symbol = "BNBUSDT"
-        case "4":
-            symbol = "XRPUSDT"
-        case "5":
-            symbol = "ADAUSDT"
-        case "6":
-            symbol = "DOGEUSDT"
-        case "7":
-            symbol = "SOLUSDT"
-        case "8":
-            symbol = "MATICUSDT"
-        case "9":
-            symbol = "DOTUSDT"
-        case "10":
             symbol = "LTCUSDT"
+        case "4":
+            symbol = "BNBUSDT"
+        case "5":
+            symbol = "USDTUSDT"
+        case "6":
+            symbol = "TRXUSDT"
+        case "7":
+            symbol = "XRPUSDT"
+        case "8":
+            symbol = "NEOUSDT"
+        case "9":
+            symbol = "QTUMUSDT"
+        case "10":
+            symbol = "EOSUSDT"
         case _:
             print("Opción no valida")
             exit()
     # god bless clear screen
+    asset = client.get_account()['balances'][int(choice)-1]['asset']
+    free = client.get_account()['balances'][int(choice)-1]['free']
     print("")
-    logging.info(f"Ud. ha elegido {symbol}\n")
+    print("Ud. ha elegido ", asset)
     time.sleep(2)
+    
     print(chr(27) + "[2J")
-    logging.info("Indique la cantidad de %s con la que desea operar", symbol)
+    
+    print("Saldo estimado:")
+    print(asset, " ", free)
+      
+    print("Indique la cantidad de ", symbol, "con la que desea operar", )
     trade_quantity = input()
+    
     print(chr(27) + "[2J")
-    logging.info("Ud. ha elegido operar con %d %s", trade_quantity, symbol)
+    print("Ud. ha elegido operar con ", trade_quantity , symbol)
     try:
         while True:
             df = get_historical_data(symbol)
             if df is None:
-                logging.error("Error al obtener datos historicos. Reintentando en 5 segundos...")
+                print("Error al obtener datos historicos. Reintentando en 5 segundos...")
                 time.sleep(5)
                 continue
             # pongo 14 porque es el rsi recomendado 
             df = calculate_rsi(df, period=14)
             current_rsi = df['rsi'].iloc[-1]
-
-            logging.info("RSI: %d ", current_rsi)
+            
+            print("RSI: ", current_rsi)
+            
+            get_price(symbol)
+            
             if not in_position and current_rsi < buy_rsi_threshold:
-                logging.info("RSI esta por debajo de %d.", buy_rsi_threshold)
+                print("RSI esta por debajo de %d.", buy_rsi_threshold)
                 place_buy_order(symbol, trade_quantity)
                 in_position = True
             elif in_position and current_rsi > sell_rsi_threshold:
-                logging.info("RSI esta por encima de %d.", sell_rsi_threshold)
+                print("RSI esta por encima de %d.", sell_rsi_threshold)
                 place_sell_order(symbol, trade_quantity)
                 in_position = False
                 
             time.sleep(5)
     except:
         logging.exception("Error de ejecucion")
-
-def get_client_data():
-    print(client.get_account())
 
 if __name__ == "__main__":
     trading_bot()
